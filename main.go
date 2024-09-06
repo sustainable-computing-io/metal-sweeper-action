@@ -16,13 +16,13 @@ var (
 )
 
 const (
-	uaFmt = "gh-action-metal-sweeper/%s %s"
+	uaFmt = "gh-action-metal-deleter/%s %s"
 )
 
 func main() {
 	authToken := os.Getenv("INPUT_AUTHTOKEN")
 	projectID := os.Getenv("INPUT_PROJECTID")
-	keepProject := os.Getenv("INPUT_KEEPPROJECT") == "true"
+	runnerName := os.Getenv("INPUT_RUNNERNAME")
 
 	if authToken == "" {
 		log.Fatal("You must provide an auth token in `with.userToken`")
@@ -30,6 +30,10 @@ func main() {
 
 	if projectID == "" {
 		log.Fatal("You must specify a project ID in `with.projectID`")
+	}
+
+	if runnerName == "" {
+		log.Fatal("You must specify a runner name in `with.runnerName`")
 	}
 
 	config := metal.NewConfiguration()
@@ -46,38 +50,17 @@ func main() {
 	// - TODO(displague) Volumes (are these project specific?)
 
 	devices, err := getAllProjectDevices(projectID)
-
 	if err != nil {
 		warn.Println("Could not list devices", err)
 	}
 
 	for _, device := range devices {
-		fmt.Println("Deleting device", device.GetHostname())
-		if _, err = client.DevicesApi.DeleteDevice(context.Background(), device.GetId()).Execute(); err != nil {
-			warn.Println("Could not delete device", err)
-		}
-	}
-
-	vlans, _, err := client.VLANsApi.FindVirtualNetworks(context.Background(), projectID).Execute()
-
-	if err != nil {
-		warn.Println("Could not list vlans", err)
-	}
-
-	for _, vlan := range vlans.VirtualNetworks {
-		fmt.Println("Deleting vlan", vlan.GetDescription())
-		if _, _, err = client.VLANsApi.DeleteVirtualNetwork(context.Background(), vlan.GetId()).Execute(); err != nil {
-			warn.Println("Could not delete vlan", err)
-		}
-	}
-
-	if keepProject {
-		fmt.Println("Skipping project deletion due to keepProject: ", keepProject)
-	} else {
-		fmt.Println("Deleting project", projectID)
-		_, err = client.ProjectsApi.DeleteProject(context.Background(), projectID).Execute()
-		if err != nil {
-			warn.Println("Could not delete project", err)
+		hostName := device.GetHostname()
+		if hostName == runnerName {
+			fmt.Println("Deleting device", hostName)
+			if _, err = client.DevicesApi.DeleteDevice(context.Background(), device.GetId()).Execute(); err != nil {
+				warn.Println("Could not delete device", err)
+			}
 		}
 	}
 }
@@ -88,7 +71,6 @@ func getAllProjectDevices(projectID string) ([]metal.Device, error) {
 
 	for {
 		devicePage, _, err := client.DevicesApi.FindProjectDevices(context.Background(), projectID).Page(page).Execute()
-
 		if err != nil {
 			return nil, err
 		}

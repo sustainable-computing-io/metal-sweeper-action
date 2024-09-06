@@ -1,17 +1,16 @@
 ---
 # action.yml
-name: "Equinix Metal Sweeper"
-description: "The Equinix Metal Sweeper action deletes a project including all server resources in that project"
+name: "Equinix Metal Deleter"
+description: "The Equinix Metal Sweeper action deletes just one server within a project"
 inputs:
-  keepProject:
-    description: "Should the project be preserved after the contents are deleted?"
-    required: false
-    default: "false"
+  authToken:
+    description: "Equinix Metal API Auth Token"
+    required: true
   projectID:
     description: "Equinix Metal Project UUID"
     required: true
-  authToken:
-    description: "Equinix Metal API Auth Token"
+  runnerName:
+    description: "Name of the runner to be deleted"
     required: true
 runs:
   using: "docker"
